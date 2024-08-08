@@ -344,9 +344,42 @@ const userCart = asyncHandler(async (req, res) => {
     let products = [];
     const user = await User.findById(_id);
     // check if user already have product in cart
-    const alreadyExistCart = await Cart.findOne({ orderby: user._id });
-    if (alreadyExistCart) {
-      alreadyExistCart.remove();
+    const existingCart = await Cart.findOne({ orderby: user._id });
+    if (existingCart) {
+// Add items to the existing cart
+for (let i = 0; i < cart.length; i++) {
+  let object = {};
+  object.product = cart[i]._id;
+  object.count = cart[i].count;
+  object.color = cart[i].color;
+  let getPrice = await Product.findById(cart[i]._id).select("price").exec();
+  object.price = getPrice.price;
+  
+  // Check if product already exists in the cart
+  let productIndex = existingCart.products.findIndex(
+    (p) => p.product.toString() === cart[i]._id
+  );
+
+  if (productIndex > -1) {
+    // Update product count and price
+    existingCart.products[productIndex].count += cart[i].count;
+    existingCart.products[productIndex].price = getPrice.price; // update price in case it has changed
+  } else {
+    // Add new product to the cart
+    existingCart.products.push(object);
+  }
+}
+
+// Calculate the new cart total
+let cartTotal = 0;
+for (let i = 0; i < existingCart.products.length; i++) {
+  cartTotal += existingCart.products[i].price * existingCart.products[i].count;
+}
+existingCart.cartTotal = cartTotal;
+
+// Save the updated cart
+await existingCart.save();
+res.json(existingCart);
     }
     for (let i = 0; i < cart.length; i++) {
       let object = {};
