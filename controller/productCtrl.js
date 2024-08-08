@@ -52,7 +52,7 @@ const createProduct = asyncHandler(async (req, res) => {
     const { id } = req.params;
     validateMongoDbId(id);
     try {
-      const findProduct = await Product.findById(id);
+      const findProduct = await Product.findById(id).populate("ratings.postedby");
       res.json(findProduct);
     } catch (error) {
       throw new Error(error);
