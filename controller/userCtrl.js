@@ -239,7 +239,7 @@ const forgotPasswordToken = asyncHandler(async (req, res) => {
   try {
     const token = await user.createPasswordResetToken();
     await user.save();
-    const resetURL = `Hi, Please follow this link to reset Your Password. This link is valid till 10 minutes from now. <a href='http://localhost:5000/api/user/reset-password/${token}'>Click Here</>`;
+    const resetURL = `Hi, Please follow this link to reset Your Password. This link is valid till 10 minutes from now. <a href='http://localhost:3000/reset-password/${token}'>Click Here</>`;
     const data = {
       to: email,
       text: "Hey User",
@@ -454,7 +454,8 @@ const createOrder = asyncHandler(async (req, res) => {
   try {
    const order = await Order.create({
     shippingInfo,paymentInfo, orderItems,totalPrice,totalPriceAfterDiscount,user:_id
-   })
+   });
+  await Cart.deleteMany ({ userId:_id });
    res.json({
     order,
     success:true
@@ -468,9 +469,11 @@ const getOrders = asyncHandler(async (req, res) => {
   const { _id } = req.user;
   validateMongoDbId(_id);
   try {
-    const userorders = await Order.findOne({ user: _id })
+    const orders = await Order.find({ user: _id })
+      .populate('user')
+      .populate('orderItems.product')
       .exec();
-    res.json(userorders);
+    res.json({orders});
   } catch (error) {
     throw new Error(error);
   }
