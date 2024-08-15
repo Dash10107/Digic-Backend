@@ -423,29 +423,32 @@ const emptyCart = asyncHandler(async (req, res) => {
   }
 });
 
-// const applyCoupon = asyncHandler(async (req, res) => {
-//   const { coupon } = req.body;
-//   const { _id } = req.user;
-//   validateMongoDbId(_id);
-//   const validCoupon = await Coupon.findOne({ name: coupon });
-//   if (validCoupon === null) {
-//     throw new Error("Invalid Coupon");
-//   }
-//   const user = await User.findOne({ _id });
-//   let { cartTotal } = await Cart.findOne({
-//     orderby: user._id,
-//   }).populate("products.product");
-//   let totalAfterDiscount = (
-//     cartTotal -
-//     (cartTotal * validCoupon.discount) / 100
-//   ).toFixed(2);
-//   await Cart.findOneAndUpdate(
-//     { orderby: user._id },
-//     { totalAfterDiscount },
-//     { new: true }
-//   );
-//   res.json(totalAfterDiscount);
-// });
+const applyCoupon = asyncHandler(async (req, res) => {
+  const { coupon } = req.body;
+  const { _id } = req.user;
+  validateMongoDbId(_id);
+  const validCoupon = await Coupon.findOne({ name: coupon });
+  if (validCoupon === null) {
+    throw new Error("Invalid Coupon");
+  }
+  try {
+    const user = await User.findOne({
+      _id,
+    });
+    const order = await Order.findOne({
+      user: user._id,
+    });
+    
+    order.totalPriceAfterDiscount = order.totalPrice -(order.totalPrice * validCoupon.discount / 100);
+    if (order.totalPriceAfterDiscount < 0) {
+      throw new Error("Coupon not valid for this order");
+    }
+    await order.save();
+    res.json(order);
+  } catch (error) {
+    throw new Error(error);
+  }
+});
 
 const createOrder = asyncHandler(async (req, res) => {
   const { shippingInfo,paymentInfo, orderItems,totalPrice,totalPriceAfterDiscount } = req.body;
@@ -482,45 +485,27 @@ const getOrders = asyncHandler(async (req, res) => {
 const getAllOrders = asyncHandler(async (req, res) => {
   try {
     const alluserorders = await Order.find()
+    .populate('user')
+    .populate('orderItems.product')
       .exec();
     res.json(alluserorders);
   } catch (error) {
     throw new Error(error);
   }
 });
-// const getOrderByUserId = asyncHandler(async (req, res) => {
-//   const { id } = req.params;
-//   validateMongoDbId(id);
-//   try {
-//     const userorders = await Order.findOne({ orderby: id })
-//       .populate("products.product")
-//       .populate("orderby")
-//       .exec();
-//     res.json(userorders);
-//   } catch (error) {
-//     throw new Error(error);
-//   }
-// });
-// const updateOrderStatus = asyncHandler(async (req, res) => {
-//   const { status } = req.body;
-//   const { id } = req.params;
-//   validateMongoDbId(id);
-//   try {
-//     const updateOrderStatus = await Order.findByIdAndUpdate(
-//       id,
-//       {
-//         orderStatus: status,
-//         paymentIntent: {
-//           status: status,
-//         },
-//       },
-//       { new: true }
-//     );
-//     res.json(updateOrderStatus);
-//   } catch (error) {
-//     throw new Error(error);
-//   }
-// });
+const getOrderByUserId = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  validateMongoDbId(id);
+  try {
+    const userorders = await Order.find({ user: id })
+    .populate("user")
+      .populate("orderItems.product")
+      res.json(userorders);
+  } catch (error) {
+    throw new Error(error);
+  }
+});
+
 
 
 
@@ -549,5 +534,7 @@ const getAllOrders = asyncHandler(async (req, res) => {
     getAllOrders,
     removeProductFromCart,
     updateQuantity,
-    getOrders
+    getOrders,
+    getOrderByUserId,
+    applyCoupon
   }

@@ -20,11 +20,12 @@ const {
   getUserCart,
   emptyCart,
   createOrder,
-
+  getOrderByUserId,
   removeProductFromCart,
   updateQuantity,
   getOrders,
-  getAllOrders
+  getAllOrders,
+  applyCoupon
 } = require("../controller/userCtrl");
 const { authMiddleware, isAdmin } = require("../middlewares/authMiddleware");
 const { checkout, paymentVerification } = require("../controller/paymentCtrl");
@@ -40,12 +41,12 @@ router.put("/password", authMiddleware, updatePassword);
 router.post("/login", loginUserCtrl);
 router.post("/admin-login", loginAdmin);
 router.post("/cart", authMiddleware, userCart);
-// router.post("/cart/applycoupon", authMiddleware, applyCoupon);
+ router.post("/order/applycoupon", authMiddleware, applyCoupon);
 router.post("/cart/create-order", authMiddleware, createOrder);
 router.get("/all-users", getallUser);
 router.get("/get-orders", authMiddleware, getOrders);
  router.get("/getallorders", authMiddleware, getAllOrders);
-// router.post("/getorderbyuser/:id", authMiddleware, isAdmin, getOrderByUserId);
+router.post("/getorderbyuser/:id", authMiddleware, isAdmin, getOrderByUserId);
 router.get("/refresh", handleRefreshToken);
 router.get("/logout", logout);
 router.get("/wishlist", authMiddleware, getWishlist);
