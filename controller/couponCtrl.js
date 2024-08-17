@@ -50,10 +50,22 @@ const getCoupon = asynHandler(async (req, res) => {
     throw new Error(error);
   }
 });
+
+const fetchCouponByName = asynHandler(async (req, res) => {
+  const { name } = req.params;
+  // validateMongoDbId(id);
+  try {
+    const getAcoupon = await Coupon.findOne({name:name});
+    res.json(getAcoupon);
+  } catch (error) {
+    throw new Error(error);
+  }
+});
 module.exports = {
   createCoupon,
   getAllCoupons,
   updateCoupon,
   deleteCoupon,
   getCoupon,
+  fetchCouponByName
 };

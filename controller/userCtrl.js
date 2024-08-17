@@ -451,10 +451,17 @@ const applyCoupon = asyncHandler(async (req, res) => {
 });
 
 const createOrder = asyncHandler(async (req, res) => {
-  const { shippingInfo,paymentInfo, orderItems,totalPrice,totalPriceAfterDiscount } = req.body;
+  const { shippingInfo,paymentInfo, orderItems,totalPrice,coupon } = req.body;
   const { _id } = req.user;
   validateMongoDbId(_id);
+  const validCoupon = await Coupon.findOne({ name: coupon });
   try {
+    if (validCoupon !== null) {
+    totalPriceAfterDiscount = totalPrice -(totalPrice * validCoupon.discount / 100);
+    }else{
+      totalPriceAfterDiscount = totalPrice;
+    }
+    
    const order = await Order.create({
     shippingInfo,paymentInfo, orderItems,totalPrice,totalPriceAfterDiscount,user:_id
    });
